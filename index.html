@@ -928,31 +928,44 @@ function viewResume() {
   const frame = document.getElementById('resume-frame');
   modal.style.display = 'block';
   document.body.style.overflow = 'hidden';
-  const doc = frame.contentDocument || frame.contentWindow.document;
-  doc.open();
-  doc.write(RESUME_HTML);
-  doc.close();
+  const blob = new Blob([RESUME_HTML], {type: 'text/html'});
+  const url = URL.createObjectURL(blob);
+  frame.src = url;
+  frame._blobUrl = url;
 }
 
 function closeResume() {
-  document.getElementById('resume-modal').style.display = 'none';
-  document.body.style.overflow = '';
-}
-
-function downloadResume() {
+  const modal = document.getElementById('resume-modal');
   const frame = document.getElementById('resume-frame');
-  // If modal not open yet, open it first then print
-  if (document.getElementById('resume-modal').style.display === 'none') {
-    viewResume();
-    setTimeout(() => {
-      frame.contentWindow.print();
-    }, 800);
-  } else {
-    frame.contentWindow.print();
+  modal.style.display = 'none';
+  document.body.style.overflow = '';
+  if (frame._blobUrl) {
+    URL.revokeObjectURL(frame._blobUrl);
+    frame._blobUrl = null;
+    frame.src = 'about:blank';
   }
 }
 
-// Close modal on backdrop click
+function downloadResume() {
+  const blob = new Blob([RESUME_HTML], {type: 'text/html'});
+  const url = URL.createObjectURL(blob);
+  const win = window.open(url, '_blank');
+  if (win) {
+    win.onload = function() {
+      setTimeout(() => {
+        win.print();
+      }, 600);
+    };
+  } else {
+    // Fallback: direct download as HTML
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'Miheer_Jadhav_Resume.html';
+    a.click();
+  }
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+}
+
 document.getElementById('resume-modal').addEventListener('click', function(e) {
   if (e.target === this) closeResume();
 });
